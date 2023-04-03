@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+	<title>Homepage</title>
+</head>
+
+
+<body>
+<div class="container">
+
+  <h2>Welcome to Soongle</h2>
+ 
+ <br> <br> <hr> <br> <br>
+
+	<form th:action="@{/results}"  method="post">
+		<input type="text" th:value="${sourceText}" name="sourceText"/>
+		<input type="submit" />
+	</form>
+
+<!--
+	<form action="#" th:action="@{/professor/save}" th:object="${professor}" method="POST">
+		
+			<input type="hidden" th:field="*{id}" />
+			<input type="hidden" th:field="*{username}" />
+			<input type="hidden" th:field="*{password}" />	
+			<input type="hidden" th:field="*{role}" />	
+
+			<input type="text" th:field="*{fullname}" class="form-control mb-4 col-4" placeholder="Full name">
+			<input type="text" th:field="*{specialty}" class="form-control mb-4 col-4" placeholder="Specialty">
+				
+			<button type="submit" class="btn btn-info col-2">Search</button>
+						
+	</form>
+ -->
+</body>
+</html>

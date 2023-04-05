@@ -18,20 +18,6 @@ public class SoongleController {
 	
 	 @RequestMapping("/home")
 	 public String getHome() {
-		 List<List<String>> records = new ArrayList<List<String>>();
-		 try {
-			 CSVReader csvReader = new CSVReader(new FileReader("data/corpus.csv"));
-		     String[] values = null;
-		     while ((values = csvReader.readNext()) != null) {
-		         records.add(Arrays.asList(values));
-		     }
-		 } catch (Exception e) {
-			 e.printStackTrace();
-		 }
-		 
-//		 System.out.println(records.get(1).get(3));
-		 
-		 
 		 
 		 return "home";
 	 }

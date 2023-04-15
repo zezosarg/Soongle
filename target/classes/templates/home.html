@@ -9,36 +9,32 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 
-	<title>Homepage</title>
+	<title> Homepage </title>
 </head>
 
 
 <body>
 <div class="container">
 
-  <h2>Welcome to Soongle</h2>
+	<br> 
+
+	<h2>Welcome to Soongle</h2>
  
- <br> <br> <hr> <br> <br>
+	<br> <hr> <br>
+
+	<a th:href="@{/createIndex}"
+		class="btn btn-primary btn-sm mb-3">
+		Create index
+	</a>
+
+	<br> <hr> <br>
 
 	<form th:action="@{/results}"  method="post">
-		<input type="text" th:value="${sourceText}" name="sourceText"/>
-		<input type="submit" />
+		<input type="text" th:value="${sourceText}" class="form-control mb-4 col-4" placeholder="Type here" name="sourceText"/>
+		<button type="submit" class="btn btn-info col-2">Search</button>
 	</form>
 
-<!--
-	<form action="#" th:action="@{/professor/save}" th:object="${professor}" method="POST">
-		
-			<input type="hidden" th:field="*{id}" />
-			<input type="hidden" th:field="*{username}" />
-			<input type="hidden" th:field="*{password}" />	
-			<input type="hidden" th:field="*{role}" />	
+</div>
 
-			<input type="text" th:field="*{fullname}" class="form-control mb-4 col-4" placeholder="Full name">
-			<input type="text" th:field="*{specialty}" class="form-control mb-4 col-4" placeholder="Specialty">
-				
-			<button type="submit" class="btn btn-info col-2">Search</button>
-						
-	</form>
- -->
 </body>
 </html>

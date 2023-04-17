@@ -24,23 +24,17 @@ public class SoongleController {
 		return "home";
 	}
 
-	@RequestMapping("/createIndex")
-	public String createIndex() throws IOException {
-		soongleService.fillIndex();
+	@RequestMapping("/buildIndex")
+	public String buildIndex() throws IOException {
+		soongleService.buildIndex();
 		return "home";
 	}
 	
 	@RequestMapping("/results")
-	public String retrieveResults(@RequestParam String sourceText, Model model) throws ParseException, IOException {
-		soongleService.fillIndex();
-
-		List<Document> results = soongleService.searchIndex("lyrics", sourceText);
-//		model.addAttribute(results);
-
-		for (Document result : results)
-			System.out.println(result.get("title"));
-		System.out.println(results.size());
-		return "home";//"results";
+	public String retrieveResults(@RequestParam("query") String query, @RequestParam("field") String field, Model model) throws ParseException, IOException {
+		List<Document> results = soongleService.searchIndex(field, query);
+		model.addAttribute("results", results);
+		return "results";
 	}
 	 
 }

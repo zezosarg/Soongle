@@ -2,11 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 
 	<title> Homepage </title>
@@ -16,22 +14,30 @@
 <body>
 <div class="container">
 
-	<br> 
-
-	<h2>Welcome to Soongle</h2>
+	<br> <h2>Welcome to Soongle</h2>
  
 	<br> <hr> <br>
 
-	<a th:href="@{/createIndex}"
-		class="btn btn-primary btn-sm mb-3">
-		Create index
-	</a>
+	<a th:href="@{/buildIndex}" class="btn btn-primary btn-sm mb-3"> Build index </a>
 
 	<br> <hr> <br>
 
 	<form th:action="@{/results}"  method="post">
-		<input type="text" th:value="${sourceText}" class="form-control mb-4 col-4" placeholder="Type here" name="sourceText"/>
+
+		Search on field:
+		<select name="field" required>
+	      <!-- <option value="">Field to search on </option> -->
+	      <option value="artist">Artist</option>
+	      <option value="title">Title</option>
+	      <option value="lyrics">Lyrics</option>
+	    </select>
+
+		<br><br>
+
+		<input type="text" class="form-control mb-4 col-4" placeholder="Query" name="query"/>
+
 		<button type="submit" class="btn btn-info col-2">Search</button>
+
 	</form>
 
 </div>

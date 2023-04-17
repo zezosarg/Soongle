@@ -32,7 +32,6 @@ import com.opencsv.CSVReader;
 @Service
 public class SoongleService {
 	
-	//@Autowired
 	private StandardAnalyzer analyzer;
 	private Directory index;
 
@@ -53,7 +52,7 @@ public class SoongleService {
         return documents;	//TODO DON'T allow duplicates
     }
     
-    public void fillIndex() throws IOException {
+    public void buildIndex() throws IOException {
     	IndexWriterConfig config = new IndexWriterConfig(analyzer);
     	IndexWriter w = new IndexWriter(index, config);
     	List<List<String>> records = loadData();

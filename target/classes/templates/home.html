@@ -2,39 +2,23 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 	<title> Homepage </title>
 </head>
 
+<body background="https://rockymountevents.com/wp-content/uploads/2019/06/Concert-crowd-with-silhouettes-of-people-hold-their-hands-up.jpg">
+	
+	<div class="container">
+		
+ 		<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+	
+		<form th:action="@{/results}"  method="post">
+			<input type="text" class="form-control mb-4 col-16" placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'" name="query"/>
+		</form>
 
-<body>
-<div class="container">
-
-	<br> 
-
-	<h2>Welcome to Soongle</h2>
- 
-	<br> <hr> <br>
-
-	<a th:href="@{/createIndex}"
-		class="btn btn-primary btn-sm mb-3">
-		Create index
-	</a>
-
-	<br> <hr> <br>
-
-	<form th:action="@{/results}"  method="post">
-		<input type="text" th:value="${sourceText}" class="form-control mb-4 col-4" placeholder="Type here" name="sourceText"/>
-		<button type="submit" class="btn btn-info col-2">Search</button>
-	</form>
-
-</div>
+	</div>
 
 </body>
+
 </html>

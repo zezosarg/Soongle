@@ -4,47 +4,42 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-
 	<title> Search results </title>
 </head>
 
-<body>
-
-<div class="container">
-
-	<h3> Search results</h3>
-	<br>
-	<a th:href="@{/home}">Back to home</a>
-	<hr>
-
-	<table class="table table-bordered table-striped">
-		
-		<thead class="thead-dark">
-			<tr>
-				<th>Title</th>
-				<th>Artist</th>
-				<th>Lyrics</th>
-			</tr>
-		</thead>
-		
-		<tbody>
-			<tr th:each="result : ${results}">
-			
-				<td th:text="${ result.get('title') }" />	
-				<td th:text="${ result.get('artist') }" />	
-				<td th:text="${ result.get('lyrics') }" />	
-				
-			</tr>
-		</tbody>		
-	</table>
-
-	<hr>
-	<a th:href="@{/fetchMore}"> More results </a>
-	<br><br>
-
-</div>
+<body background="https://wallpapertag.com/wallpaper/full/9/5/9/709857-cool-music-background-images-1920x1080-for-samsung.jpg">
+	<div class="container">
 	
+		<h3> Search results</h3>
+		<br>
+		<a th:href="@{/home}"> Back to home</a>
+		<hr>
+	
+		<table style="background-color:#FFFFE0;" class="table table-bordered table-striped">
+			
+			<thead class="thead-dark">
+				<tr>
+					<th>Artist</th> <th>Title</th> <th>Lyrics</th>
+				</tr>
+			</thead>
+			
+			<tbody>
+				<tr th:each="result : ${results}">
+				
+					<td th:utext="${ result.get('artist') }" />	
+					<td th:utext="${ result.get('title') }" />	
+					<td th:utext="${ result.get('lyrics') }" />	
+					
+				</tr>
+			</tbody>		
+		</table>
+	
+		<hr>
+		<a th:href="@{/moreResults}"> More results </a>
+		<br><br>
+	
+	</div>
 </body>
+
 </html>

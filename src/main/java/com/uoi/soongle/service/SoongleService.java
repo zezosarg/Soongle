@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -22,6 +24,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.grouping.GroupingSearch;
+import org.apache.lucene.search.highlight.Fragmenter;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
+import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,22 +43,48 @@ public class SoongleService {
 	
 	private StandardAnalyzer analyzer;
 	private Directory index;
+	private ScoreDoc lastDoc;
+	private String query;
 
     @Autowired
     public SoongleService() throws IOException {
-		this.index = FSDirectory.open(Paths.get("/tmp/testindex"));
+		this.index = FSDirectory.open(Paths.get("luceneindex"));
 		this.analyzer = new StandardAnalyzer();
 	}	
 
-    public List<Document> searchIndex(String inField, String queryString) throws ParseException, IOException {
-        Query query = new QueryParser(inField, analyzer).parse(queryString);
+    public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
+        query = queryString;
+    	Query query = new QueryParser(inField, analyzer).parse(queryString);
+    	QueryScorer queryScorer = new QueryScorer(query, inField);
+    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
+    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
+    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
         IndexReader indexReader = DirectoryReader.open(index);
         IndexSearcher searcher = new IndexSearcher(indexReader);
-        TopDocs topDocs = searcher.search(query, 10);
-        List<Document> documents = new ArrayList<>();
-        for (ScoreDoc scoreDoc : topDocs.scoreDocs)
-            documents.add(searcher.doc(scoreDoc.doc));
-        return documents;	//TODO DON'T allow duplicates
+//        GroupingSearch groupingSearch = new GroupingSearch("artist");
+        TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
+        ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+        List<Map<String, String>> results = new ArrayList<>();
+       
+        for (ScoreDoc scoreDoc : scoreDocs) {
+        	Map<String, String> result = new HashMap<>();
+        	Document document = searcher.doc(scoreDoc.doc);
+            
+            String field = document.get(inField);
+            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
+            String fragment = highlighter.getBestFragment(tokenStream, field);
+            result.put(inField, fragment);
+            
+            for (String s: Arrays.asList("artist", "title", "lyrics"))
+            	if (s != inField)
+            		result.put(s, document.get(s));
+            	
+            results.add(result);
+            
+            lastDoc = scoreDoc;
+        }
+        
+        return results;
     }
     
     public void buildIndex() throws IOException {
@@ -73,9 +108,13 @@ public class SoongleService {
 	public void addDoc(IndexWriter w, String artist, String title, String lyrics) throws IOException {
 		Document doc = new Document();
 		doc.add(new TextField("artist", artist, Field.Store.YES));
-		doc.add(new StringField("title", title, Field.Store.YES));
-		doc.add(new StringField("lyrics", lyrics, Field.Store.YES));
+		doc.add(new TextField("title", title, Field.Store.YES));
+		doc.add(new TextField("lyrics", lyrics, Field.Store.YES));
 		w.addDocument(doc);
 	}
+
+	public String getQuery() { return query; }
+
+	public void setLastDoc(Object object) {	lastDoc = null;	}
 	
 }

@@ -6,7 +6,7 @@ df = df.drop('link', axis=1)    # drop link column
 
 df = df.iloc[1: , :]	# drop first row
 
-df = df.sample(n = 20) # pick n random samples
+df = df.sample(n = 500) # pick n random samples
 
 print(df)
 

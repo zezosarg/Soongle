@@ -1,5 +1,6 @@
 package com.uoi.soongle.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +30,10 @@ public class SoongleController {
 		Path path = Paths.get("luceneindex");
 		if (!Files.exists(path))
 			soongleService.buildIndex();
+//		Path path = Paths.get("luceneindex");
+//		if (Files.exists(path))
+//			FileUtils.deleteDirectory(new File("luceneindex"));
+//		soongleService.buildIndex();
 		return "home";
 	}
 

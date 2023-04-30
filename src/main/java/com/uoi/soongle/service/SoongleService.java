@@ -49,6 +49,8 @@ import com.opencsv.CSVReader;
 public class SoongleService {
 	
 	private ScoreDoc lastDoc;
+
+	private int lastGroup;
 	private String query;
 
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
@@ -82,46 +84,48 @@ public class SoongleService {
     public List<Map<String, String>> groupSearchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+
+		int maxGroupsPerPage = 5;
+		int groupDocumentLimit = 100;
+
 		query = queryString;
-//    	Query query = new QueryParser(inField, analyzer).parse(queryString);
-        //Query query = new TermQuery(new Term("lyrics", "baby"));
-    	
-//    	QueryScorer queryScorer = new QueryScorer(query, inField);
-//    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
-//    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
-//    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
+		Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
+
+    	QueryScorer queryScorer = new QueryScorer(query, inField);
+    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
+    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
+    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
+
 		GroupingSearch groupingSearch = new GroupingSearch("artist");
 		groupingSearch.setGroupSort(new Sort(SortField.FIELD_SCORE));
-		//        groupingSearch.setFillSortFields(true);
 		groupingSearch.setCachingInMB(4.0, true);
 		groupingSearch.setAllGroups(true);
-		//groupingSearch.setAllGroupHeads(true);
-		groupingSearch.setGroupDocsLimit(10);
+		groupingSearch.setGroupDocsLimit(groupDocumentLimit);
 
-		Query query = new TermQuery(new Term("lyrics", queryString));
-
-		TopGroups<BytesRef> result = groupingSearch.search(indexSearcher, query, 0, 10);
-        System.out.println("topGroups.groups.length "+result.groups.length);
-//        TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
-        List<Map<String, String>> results = new ArrayList<>();
-	    for (GroupDocs<BytesRef> groupDocs : result.groups) {
+		TopGroups<BytesRef> topGroups = groupingSearch.search(indexSearcher, query, lastGroup, maxGroupsPerPage);
+        System.out.println("topGroups.groups.length "+topGroups.groups.length);
+        List<Map<String, String>> documentsList = new ArrayList<>();
+	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
 	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
 	    	System.out.println("scoreDocs.length "+scoreDocs.length);
         	for (ScoreDoc scoreDoc : scoreDocs) {
-	        	Map<String, String> resultt = new HashMap<>();
+	        	Map<String, String> fieldMap = new HashMap<>();
+
 	        	Document document = indexSearcher.doc(scoreDoc.doc);
-//	            String field = document.get(inField);
-//	            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
-//	            String fragment = highlighter.getBestFragment(tokenStream, field);
-//	            result.put(inField, fragment);
+	            String field = document.get(inField);
+	            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
+	            String fragment = highlighter.getBestFragment(tokenStream, field);
+
+	            fieldMap.put(inField, fragment);
 	            for (String s: Arrays.asList("artist", "title", "lyrics"))
-//	            	if (s != inField)
-	            		resultt.put(s, document.get(s));
-	            results.add(resultt);
-	            lastDoc = scoreDoc;
+	            	if (s != inField)
+	            		fieldMap.put(s, document.get(s));
+	            documentsList.add(fieldMap);
 	        }
     	}
-        return results;
+
+		lastGroup += maxGroupsPerPage;
+        return documentsList;
     }
     
     public void buildIndex() throws IOException {
@@ -164,5 +168,8 @@ public class SoongleService {
 	public String getQuery() { return query; }
 
 	public void setLastDoc(Object object) {	lastDoc = null;	}
-	
+
+	public void setLastGroup(int i) {
+		lastGroup = i;
+	}
 }

@@ -27,14 +27,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -87,37 +80,44 @@ public class SoongleService {
     }
     
     public List<Map<String, String>> groupSearchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
-        query = queryString;
+		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
+		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+		query = queryString;
 //    	Query query = new QueryParser(inField, analyzer).parse(queryString);
-        Query query = new TermQuery(new Term("lyrics", "baby"));
+        //Query query = new TermQuery(new Term("lyrics", "baby"));
     	
 //    	QueryScorer queryScorer = new QueryScorer(query, inField);
 //    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
 //    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
 //    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
-        IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
-        IndexSearcher searcher = new IndexSearcher(indexReader);
-        GroupingSearch groupingSearch = new GroupingSearch("artist");
-//        groupingSearch.setGroupSort(new Sort(SortField.FIELD_SCORE));
-//        groupingSearch.setAllGroups(true);
-        TopGroups<BytesRef> topGroups = groupingSearch.search(searcher, query, 0, 10);
-        System.out.println("topGroups.groups.length "+topGroups.groups.length);
+		GroupingSearch groupingSearch = new GroupingSearch("artist");
+		groupingSearch.setGroupSort(new Sort(SortField.FIELD_SCORE));
+		//        groupingSearch.setFillSortFields(true);
+		groupingSearch.setCachingInMB(4.0, true);
+		groupingSearch.setAllGroups(true);
+		//groupingSearch.setAllGroupHeads(true);
+		groupingSearch.setGroupDocsLimit(10);
+
+		Query query = new TermQuery(new Term("lyrics", queryString));
+
+		TopGroups<BytesRef> result = groupingSearch.search(indexSearcher, query, 0, 10);
+        System.out.println("topGroups.groups.length "+result.groups.length);
 //        TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
         List<Map<String, String>> results = new ArrayList<>();
-	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
+	    for (GroupDocs<BytesRef> groupDocs : result.groups) {
 	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
 	    	System.out.println("scoreDocs.length "+scoreDocs.length);
         	for (ScoreDoc scoreDoc : scoreDocs) {
-	        	Map<String, String> result = new HashMap<>();
-	        	Document document = searcher.doc(scoreDoc.doc);
+	        	Map<String, String> resultt = new HashMap<>();
+	        	Document document = indexSearcher.doc(scoreDoc.doc);
 //	            String field = document.get(inField);
 //	            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
 //	            String fragment = highlighter.getBestFragment(tokenStream, field);
 //	            result.put(inField, fragment);
 	            for (String s: Arrays.asList("artist", "title", "lyrics"))
 //	            	if (s != inField)
-	            		result.put(s, document.get(s));
-	            results.add(result);
+	            		resultt.put(s, document.get(s));
+	            results.add(resultt);
 	            lastDoc = scoreDoc;
 	        }
     	}
@@ -154,6 +154,7 @@ public class SoongleService {
 //		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 //		document.add(new StoredField("artist", artist));
 		
+		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 		document.add(new TextField("artist", artist, Field.Store.YES));
 		document.add(new TextField("title", title, Field.Store.YES));
 		document.add(new TextField("lyrics", lyrics, Field.Store.YES));

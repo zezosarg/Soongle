@@ -47,7 +47,7 @@ public class SoongleController {
 	public String retrieveResults(@RequestParam("query") String query, Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
 		searchHistory.add(query);
 		soongleService.setLastDoc(null);
-		List<Map<String, String>> results = soongleService.searchIndex("lyrics", query);
+		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", query);//soongleService.searchIndex("lyrics", query);
 		model.addAttribute("results", results);
 		return "results";
 	}

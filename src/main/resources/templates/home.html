@@ -3,26 +3,43 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link th:href="@{/css/main.css}" rel="stylesheet" />
+	<script type="text/javascript" th:src="@{/js/autocomplete.js}"></script>
 	<title> Homepage </title>
 </head>
 
-<body background="https://wallpapertag.com/wallpaper/full/9/5/9/709857-cool-music-background-images-1920x1080-for-samsung.jpg">
-	
-	<div class="container">
-
-		<br>		
-
-		<h3> Search </h3>
+	<body background="https://wallpapertag.com/wallpaper/full/9/5/9/709857-cool-music-background-images-1920x1080-for-samsung.jpg">
 		
- 		<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+		<div class="container">
 	
-		<form th:action="@{/results}"  method="post">
-			<input type="text" class="form-control mb-4 col-16" placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'" name="query"/>
-		</form>
+			<br>		
+	
+			<h4> Search about your favorite song, artist or lyrics</h4>
+			
+	 		<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+		
+			<form autocomplete="off" th:action="@{/results}"  method="post">
+				<div class="autocomplete" style="width:1000px;">
+					<input
+						id="myInput"
+						type="text"
+						placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'"
+						name="query"
+					/>
+				<div><br>
+			  	<input type="submit">
+			<!--<input type="text" class="form-control mb-4 col-16" placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'" name="query"/>-->
+			</form>
 
-	</div>
-
-</body>
+			<script th:inline="javascript">
+			    var historyJs = /*[[${history}]]*/;
+				autocomplete(document.getElementById("myInput"), historyJs);
+			</script>
+	
+		</div>
+	
+	</body>
 
 </html>

@@ -1,16 +1,16 @@
 package com.uoi.soongle.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,10 +23,15 @@ import com.uoi.soongle.service.SoongleService;
 public class SoongleController {
 
 	@Autowired
-	SoongleService soongleService;
+	private SoongleService soongleService;
+	private Set<String> searchHistory;
+
+	public SoongleController(Set<String> searchHistory) {
+		this.searchHistory = new HashSet<String>();
+	}
 	
 	@RequestMapping("/home")
-	public String getHome() throws IOException {
+	public String getHome(Model model) throws IOException {
 		Path path = Paths.get("luceneindex");
 		if (!Files.exists(path))
 			soongleService.buildIndex();
@@ -34,11 +39,13 @@ public class SoongleController {
 //		if (Files.exists(path))
 //			FileUtils.deleteDirectory(new File("luceneindex"));
 //		soongleService.buildIndex();
+	    model.addAttribute("history", searchHistory);
 		return "home";
 	}
 
 	@RequestMapping("/results")
 	public String retrieveResults(@RequestParam("query") String query, Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
+		searchHistory.add(query);
 		soongleService.setLastDoc(null);
 		List<Map<String, String>> results = soongleService.searchIndex("lyrics", query);
 		model.addAttribute("results", results);

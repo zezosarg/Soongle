@@ -18,13 +18,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -153,15 +147,39 @@ public class SoongleService {
     	w.close();
     }
 
-	public void buildModel() throws IOException {
+	public void buildModel() throws IOException, ParseException {
 		if(modelBuilt)
 			return;
+
 		model = new Word2VectorModel();
+
+		IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
+		IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("modelindex")), config);
+
 		List<List<String>> records = loadData();
 		for (List<String> record : records)
-			model.addDocument(record.get(0), record.get(1), record.get(2), record.get(3));
-		System.out.println("DONEEEEEEEEE");
-		model.printHashMap();
+			model.addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));
+
+		w.close();
+
+		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
+		IndexSearcher searcher = new IndexSearcher(indexReader);
+		TopDocs topDocs = searcher.searchAfter(null,
+				new QueryParser("id", new StandardAnalyzer()).parse("5381"),
+				10);
+
+		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+			Document document = searcher.doc(scoreDoc.doc);
+			System.out.println(document.get("id"));
+
+			IndexableField[] fields = document.getFields("vector");
+			for (IndexableField field : fields) {
+				System.out.print(", " + field.numericValue() + ", ");
+			}
+			System.out.println();
+
+		}
+
 		modelBuilt = true;
 	}
 	

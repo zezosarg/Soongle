@@ -1,6 +1,9 @@
 package com.uoi.soongle.service;
 
 
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.util.BytesRef;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -16,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class Word2VectorModel {
@@ -131,6 +135,33 @@ public class Word2VectorModel {
     	for (Map.Entry<String, INDArray> entry : documentVectors.entrySet()) {
     	    System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
     	}
+    }
+
+    public void addDoc(IndexWriter w, String id , String artist, String title, String lyrics) throws IOException {
+
+        documentCount++;
+        if(documentCount % 100 == 0){
+            System.out.println("The document counttt is: "+ documentCount);
+        }
+
+        Document document = new Document();
+
+        INDArray indArray = textToVector("artist"+" "+artist);
+
+        if (Integer.parseInt(id) == 5381){
+            System.out.println("before load: "+indArray);
+        }
+
+        document.add(new TextField("id", id, Field.Store.YES));
+
+        //traverse indArray
+        for(int i = 0; i < indArray.length(); i++) {
+
+            //DoubleField doubleField = new DoubleField("double_value", 100.0D, Field.Store.YES);
+        	document.add(new StoredField("vector", indArray.getDouble(i)));
+        }
+
+        w.addDocument(document);
     }
 
 }

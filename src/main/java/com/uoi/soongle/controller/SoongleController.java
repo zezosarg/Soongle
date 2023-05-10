@@ -31,13 +31,16 @@ public class SoongleController {
 	}
 	
 	@RequestMapping("/home")
-	public String getHome(Model model) throws IOException {
+	public String getHome(Model model) throws IOException, ParseException {
 		Path path = Paths.get("luceneindex");
+		Path path2 = Paths.get("modelindex");
 
-		soongleService.buildModel();
+		if (!Files.exists(path2))
+			soongleService.buildModel();
 
 		if (!Files.exists(path))
 			soongleService.buildIndex();
+
 //		Path path = Paths.get("luceneindex");
 //		if (Files.exists(path))
 //			FileUtils.deleteDirectory(new File("luceneindex"));

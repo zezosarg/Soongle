@@ -35,8 +35,10 @@ public class SoongleController {
 		Path path = Paths.get("luceneindex");
 		Path path2 = Paths.get("modelindex");
 
+		soongleService.buildModel();
+
 		if (!Files.exists(path2))
-			soongleService.buildModel();
+			soongleService.buildModelIndex();
 
 		if (!Files.exists(path))
 			soongleService.buildIndex();

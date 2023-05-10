@@ -1,8 +1,17 @@
 package com.uoi.soongle.service;
 
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -137,6 +146,63 @@ public class Word2VectorModel {
     	}
     }
 
+    public List<Integer> getTopDocs(IndexReader indexReader, String query, int topN) throws IOException, ParseException {
+        INDArray queryVector = textToVector(query);
+
+        if(queryVector == null){
+            return null;
+        }
+
+        //IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
+        IndexSearcher searcher = new IndexSearcher(indexReader);
+
+        TopDocs topDocs = searcher.searchAfter(null,
+               new MatchAllDocsQuery(),
+                40000);
+
+        List<DocScore> docIdAndSimilarity = new ArrayList<>();
+
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+
+            Document document = searcher.doc(scoreDoc.doc);
+            ///System.out.println(document.get("id"));
+
+            INDArray docVector = null;
+            IndexableField[] fields = document.getFields("vector");
+            int vectorSize = vec.getLayerSize();
+            INDArray vectorArray = Nd4j.zeros(1, vectorSize);
+
+            //create a vector from all the fields
+            int i = 0;
+            for (IndexableField field : fields) {
+                vectorArray.putScalar(i, field.numericValue().doubleValue());
+                i++;
+                ///System.out.print(", " + field.numericValue() + ", ");
+            }
+
+            double vecSim = vectorSimilarity(queryVector, vectorArray);
+
+            ///System.out.println();
+
+            docIdAndSimilarity.add(new DocScore(Integer.parseInt(document.get("id")), vecSim));
+
+        }
+        Collections.sort(docIdAndSimilarity, new Comparator<DocScore>() {
+            @Override
+            public int compare(DocScore a, DocScore b) {
+                return Double.compare(b.getScore(), a.getScore());
+            }
+        });
+
+        List<Integer> topDocuments = new ArrayList<>();
+        for(int i = 0; i < topN; i++){
+            topDocuments.add(docIdAndSimilarity.get(i).getDocId());
+            System.out.println("The doc id: "+ docIdAndSimilarity.get(i).getDocId() + " The score: "+ docIdAndSimilarity.get(i).getScore());
+        }
+        return topDocuments;
+
+    }
+
     public void addDoc(IndexWriter w, String id , String artist, String title, String lyrics) throws IOException {
 
         documentCount++;
@@ -147,11 +213,11 @@ public class Word2VectorModel {
         Document document = new Document();
 
         INDArray indArray = textToVector("artist"+" "+artist);
-
+/*
         if (Integer.parseInt(id) == 5381){
             System.out.println("before load: "+indArray);
         }
-
+*/
         document.add(new TextField("id", id, Field.Store.YES));
 
         //traverse indArray

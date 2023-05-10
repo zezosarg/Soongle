@@ -13,10 +13,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -31,10 +28,8 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
 import org.apache.lucene.search.highlight.TokenSources;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.CSVReader;
@@ -126,11 +121,12 @@ public class SoongleService {
         return documentsList;
     }
 
-	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException {
+	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException {
 		query = queryString;
 		List<Map<String, String>> results = new ArrayList<>();
 
-		List<Integer> docOrder = model.getTopDocumentsBasedOnSimilarity(queryString, 10);
+		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
+		List<Integer> docOrder = model.getTopDocs(indexReader, queryString, 10);//model.getTopDocumentsBasedOnSimilarity(queryString, 10);
 		//for (Integer docId : docOrder) {
 		//	System.out.println("Highscore: " + docId);
 		//}
@@ -147,11 +143,16 @@ public class SoongleService {
     	w.close();
     }
 
-	public void buildModel() throws IOException, ParseException {
+	public void buildModel(){
+		//This is loaded in memory
 		if(modelBuilt)
 			return;
 
 		model = new Word2VectorModel();
+		modelBuilt = true;
+	}
+
+	public void buildModelIndex() throws IOException, ParseException {
 
 		IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
 		IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("modelindex")), config);
@@ -161,7 +162,7 @@ public class SoongleService {
 			model.addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));
 
 		w.close();
-
+/*
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
 		IndexSearcher searcher = new IndexSearcher(indexReader);
 		TopDocs topDocs = searcher.searchAfter(null,
@@ -179,8 +180,7 @@ public class SoongleService {
 			System.out.println();
 
 		}
-
-		modelBuilt = true;
+*/
 	}
 	
 	public List<List<String>> loadData() throws IOException {

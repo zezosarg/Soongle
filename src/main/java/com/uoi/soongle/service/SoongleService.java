@@ -47,11 +47,15 @@ import com.opencsv.CSVReader;
 
 @Service
 public class SoongleService {
-	
+
+	Word2VectorModel model = null;
+
 	private ScoreDoc lastDoc;
 
 	private int lastGroup;
 	private String query;
+
+	private boolean modelBuilt = false;
 
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
@@ -127,15 +131,39 @@ public class SoongleService {
 		lastGroup += maxGroupsPerPage;
         return documentsList;
     }
-    
+
+	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException {
+		query = queryString;
+		List<Map<String, String>> results = new ArrayList<>();
+
+		List<Integer> docOrder = model.getTopDocumentsBasedOnSimilarity(queryString, 10);
+		//for (Integer docId : docOrder) {
+		//	System.out.println("Highscore: " + docId);
+		//}
+		return results;
+	}
+
     public void buildIndex() throws IOException {
+
     	IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
     	IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("luceneindex")), config);
     	List<List<String>> records = loadData();
     	for (List<String> record : records)
-    		addDoc(w, record.get(1), record.get(2), record.get(3));	// 0 is id
+    		addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));	// 0 is id
     	w.close();
     }
+
+	public void buildModel() throws IOException {
+		if(modelBuilt)
+			return;
+		model = new Word2VectorModel();
+		List<List<String>> records = loadData();
+		for (List<String> record : records)
+			model.addDocument(record.get(0), record.get(1), record.get(2), record.get(3));
+		System.out.println("DONEEEEEEEEE");
+		model.printHashMap();
+		modelBuilt = true;
+	}
 	
 	public List<List<String>> loadData() throws IOException {
 		List<List<String>> records = new ArrayList<List<String>>();
@@ -146,7 +174,7 @@ public class SoongleService {
 		return records;
 	}
 	
-	public void addDoc(IndexWriter w, String artist, String title, String lyrics) throws IOException {
+	public void addDoc(IndexWriter w, String id ,String artist, String title, String lyrics) throws IOException {
 		Document document = new Document();
 		
 //		FieldType fieldType = new FieldType();
@@ -159,6 +187,7 @@ public class SoongleService {
 //		document.add(new StoredField("artist", artist));
 		
 		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
+		document.add(new TextField("id", id, Field.Store.YES));
 		document.add(new TextField("artist", artist, Field.Store.YES));
 		document.add(new TextField("title", title, Field.Store.YES));
 		document.add(new TextField("lyrics", lyrics, Field.Store.YES));

@@ -33,6 +33,9 @@ public class SoongleController {
 	@RequestMapping("/home")
 	public String getHome(Model model) throws IOException {
 		Path path = Paths.get("luceneindex");
+
+		soongleService.buildModel();
+
 		if (!Files.exists(path))
 			soongleService.buildIndex();
 //		Path path = Paths.get("luceneindex");
@@ -48,6 +51,7 @@ public class SoongleController {
 		searchHistory.add(query);
 		soongleService.setLastDoc(null);
 		soongleService.setLastGroup(0);
+		soongleService.searchWord2Vec(query);
 		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", query);//soongleService.searchIndex("lyrics", query);
 		model.addAttribute("results", results);
 		return "results";

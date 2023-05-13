@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import javax.print.Doc;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -34,18 +35,11 @@ import java.util.*;
 public class Word2VectorModel {
 
     private Word2Vec vec;
-
+//TODO remove the following count, it is just for testing
     private int documentCount = 0;
 
-    private HashMap<String, INDArray> documentVectors = new HashMap<>();
-
-    public HashMap<String, INDArray> getDocumentVectors() {
-        return documentVectors;
-    }
-
-    public void setDocumentVectors(HashMap<String, INDArray> documentVectors) {
-        this.documentVectors = documentVectors;
-    }
+    private List<DocScore> docIdAndSimilarity = new ArrayList<>();
+    private String lastQuery = "";
 
     public Word2VectorModel(){
 
@@ -53,30 +47,7 @@ public class Word2VectorModel {
         vec = WordVectorSerializer.readWord2VecModel("C:\\IntellijProjects\\World2Vecdl4jtest\\src\\main\\resources\\lexvec.enwiki+newscrawl.300d.W.pos.vectors");
 
     }
-/*
-    public INDArray textToVector(String text){
-        if(text == null || text.isEmpty()){
-            return null;
-        }
-        text = text.toLowerCase();
-        Collection<String> collection = List.of(text.split("\\s+"));
-        INDArray indArray = null;
 
-        for(String element: collection){
-            if(indArray == null){
-                indArray = vec.getWordVectorMatrix(element);
-            }else{
-                INDArray temp = vec.getWordVectorMatrix(element);
-                //System.out.println("The current"+ indArray);
-                //System.out.println("The temp: "+ temp);
-                if(temp != null) {
-                    indArray = indArray.add(temp);
-                }
-            }
-        }
-        return indArray;
-    }
-*/
     public INDArray textToVector(String text){
         if(text == null || text.isEmpty()){
             return null;
@@ -103,64 +74,31 @@ public class Word2VectorModel {
         return vector1.equals(vector2) ? 1.0 : Transforms.cosineSim(vector1, vector2);
     }
 
-    public void addDocument(String id, String artist, String title, String lyrics){
-        INDArray indArray = textToVector("artist"+" "+artist);
-       // System.out.println("The docuemnt stuff "+ id + " "+ artist + " "+ title);
-        documentCount++;
-        if(documentCount % 100 == 0){
-            System.out.println("The document count is: "+ documentCount);
-        }
-        //in memory for now
-        documentVectors.put(id, indArray);
-    }
+    public List<DocScore> getTopDocs(IndexReader indexReader, String query,int index,int topN) throws IOException, ParseException {
 
-    public List<Integer> getTopDocumentsBasedOnSimilarity(String query, int topN){
-        INDArray queryVector = textToVector(query);
-        if(queryVector == null){
-            return null;
-        }
-        List<DocScore> docIdAndSimilarity = new ArrayList<>();
-        for(Map.Entry<String, INDArray> entry: documentVectors.entrySet()){
-            double vecSim = vectorSimilarity(queryVector, entry.getValue());
-            docIdAndSimilarity.add(new DocScore(Integer.parseInt(entry.getKey()), vecSim));
-        }
-        Collections.sort(docIdAndSimilarity, new Comparator<DocScore>() {
-            @Override
-            public int compare(DocScore a, DocScore b) {
-                return Double.compare(b.getScore(), a.getScore());
-            }
-        });
+        if(query.equals(lastQuery) && !docIdAndSimilarity.isEmpty()){
 
-        List<Integer> topDocuments = new ArrayList<>();
-        for(int i = 0; i < topN; i++){
-            topDocuments.add(docIdAndSimilarity.get(i).getDocId());
-            System.out.println("The doc id: "+ docIdAndSimilarity.get(i).getDocId() + " The score: "+ docIdAndSimilarity.get(i).getScore());
+            int endIndex = Math.min(docIdAndSimilarity.size(), index+topN);
+            List<DocScore> topDocsList = docIdAndSimilarity.subList(index, endIndex);
+
+            return topDocsList;
         }
 
-        return topDocuments;
-    }
+        lastQuery = query;
 
-    public void printHashMap() {
-    	for (Map.Entry<String, INDArray> entry : documentVectors.entrySet()) {
-    	    System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
-    	}
-    }
-
-    public List<Integer> getTopDocs(IndexReader indexReader, String query, int topN) throws IOException, ParseException {
         INDArray queryVector = textToVector(query);
 
         if(queryVector == null){
             return null;
         }
 
-        //IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
         IndexSearcher searcher = new IndexSearcher(indexReader);
 
         TopDocs topDocs = searcher.searchAfter(null,
                new MatchAllDocsQuery(),
                 40000);
 
-        List<DocScore> docIdAndSimilarity = new ArrayList<>();
+        docIdAndSimilarity = new ArrayList<>();
 
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
 
@@ -183,10 +121,11 @@ public class Word2VectorModel {
             double vecSim = vectorSimilarity(queryVector, vectorArray);
 
             ///System.out.println();
-
+            //documentIdList.add(Integer.parseInt(document.get("id")));
             docIdAndSimilarity.add(new DocScore(Integer.parseInt(document.get("id")), vecSim));
 
         }
+
         Collections.sort(docIdAndSimilarity, new Comparator<DocScore>() {
             @Override
             public int compare(DocScore a, DocScore b) {
@@ -194,15 +133,9 @@ public class Word2VectorModel {
             }
         });
 
-        List<Integer> topDocuments = new ArrayList<>();
-        for(int i = 0; i < topN; i++){
-            topDocuments.add(docIdAndSimilarity.get(i).getDocId());
-            System.out.println("The doc id: "+ docIdAndSimilarity.get(i).getDocId() + " The score: "+ docIdAndSimilarity.get(i).getScore());
-        }
-        return topDocuments;
+        return docIdAndSimilarity.subList(index, Math.min(docIdAndSimilarity.size(), index+topN));
 
     }
-
     public void addDoc(IndexWriter w, String id , String artist, String title, String lyrics) throws IOException {
 
         documentCount++;
@@ -213,11 +146,7 @@ public class Word2VectorModel {
         Document document = new Document();
 
         INDArray indArray = textToVector("artist"+" "+artist);
-/*
-        if (Integer.parseInt(id) == 5381){
-            System.out.println("before load: "+indArray);
-        }
-*/
+
         document.add(new TextField("id", id, Field.Store.YES));
 
         //traverse indArray

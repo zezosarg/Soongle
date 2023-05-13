@@ -126,11 +126,14 @@ public class SoongleService {
 		List<Map<String, String>> results = new ArrayList<>();
 
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		List<Integer> docOrder = model.getTopDocs(indexReader, queryString, 10);//model.getTopDocumentsBasedOnSimilarity(queryString, 10);
-		//for (Integer docId : docOrder) {
-		//	System.out.println("Highscore: " + docId);
-		//}
-		return results;
+		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,10);//model.getTopDocumentsBasedOnSimilarity(queryString, 10);
+		for (DocScore docScore : docOrder) {
+			System.out.println("The doc id is "+docScore.getDocId()+" and the score is "+docScore.getScore());
+		}
+
+
+
+		return results;//searchIndex("id","", results);
 	}
 
     public void buildIndex() throws IOException {

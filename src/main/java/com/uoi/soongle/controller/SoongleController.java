@@ -56,6 +56,7 @@ public class SoongleController {
 		searchHistory.add(query);
 		soongleService.setLastDoc(null);
 		soongleService.setLastGroup(0);
+
 		soongleService.searchWord2Vec(query);
 		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", query);//soongleService.searchIndex("lyrics", query);
 		model.addAttribute("results", results);

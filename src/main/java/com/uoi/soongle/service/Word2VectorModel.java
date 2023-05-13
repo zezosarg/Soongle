@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static java.lang.Double.NaN;
+
 public class Word2VectorModel {
 
     private Word2Vec vec;
@@ -44,7 +46,7 @@ public class Word2VectorModel {
     public Word2VectorModel(){
 
         System.out.println("Loading model....");
-        vec = WordVectorSerializer.readWord2VecModel("C:\\IntellijProjects\\World2Vecdl4jtest\\src\\main\\resources\\lexvec.enwiki+newscrawl.300d.W.pos.vectors");
+        vec = WordVectorSerializer.readWord2VecModel("data\\lexvec.enwiki+newscrawl.300d.W.pos.vectors");
 
     }
 
@@ -120,6 +122,10 @@ public class Word2VectorModel {
 
             double vecSim = vectorSimilarity(queryVector, vectorArray);
 
+            if(Double.isNaN(vecSim)){
+                continue;
+            }
+
             ///System.out.println();
             //documentIdList.add(Integer.parseInt(document.get("id")));
             docIdAndSimilarity.add(new DocScore(Integer.parseInt(document.get("id")), vecSim));
@@ -140,12 +146,12 @@ public class Word2VectorModel {
 
         documentCount++;
         if(documentCount % 100 == 0){
-            System.out.println("The document counttt is: "+ documentCount);
+            System.out.println("The document count is: "+ documentCount);
         }
 
         Document document = new Document();
 
-        INDArray indArray = textToVector("artist"+" "+artist);
+        INDArray indArray = textToVector(artist + " " + title);
 
         document.add(new TextField("id", id, Field.Store.YES));
 

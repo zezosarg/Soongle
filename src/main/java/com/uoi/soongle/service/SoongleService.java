@@ -121,14 +121,26 @@ public class SoongleService {
         return documentsList;
     }
 
-	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException {
+	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException, InvalidTokenOffsetsException {
 		query = queryString;
 		List<Map<String, String>> results = new ArrayList<>();
 
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,10);//model.getTopDocumentsBasedOnSimilarity(queryString, 10);
+		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,10);
+
 		for (DocScore docScore : docOrder) {
-			System.out.println("The doc id is "+docScore.getDocId()+" and the score is "+docScore.getScore());
+			IndexReader indexReaderLucene = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
+			IndexSearcher searcher = new IndexSearcher(indexReaderLucene);
+			Query queryObj = new QueryParser("id", new StandardAnalyzer()).parse(docScore.getDocId()+"");
+			TopDocs topDocs = searcher.searchAfter(null, queryObj, 1);
+			ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+			for (ScoreDoc scoreDoc : scoreDocs) {
+				Map<String, String> result = new HashMap<>();
+				Document document = searcher.doc(scoreDoc.doc);
+				for (String s: Arrays.asList("artist", "title", "lyrics"))
+					result.put(s, document.get(s));
+				results.add(result);
+			}
 		}
 
 
@@ -147,7 +159,6 @@ public class SoongleService {
     }
 
 	public void buildModel(){
-		//This is loaded in memory
 		if(modelBuilt)
 			return;
 

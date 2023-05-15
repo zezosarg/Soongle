@@ -3,11 +3,7 @@ package com.uoi.soongle.service;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -16,18 +12,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.highlight.Fragmenter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
-import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Service;
@@ -51,11 +43,15 @@ public class SoongleService {
 
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
-    	Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
-    	QueryScorer queryScorer = new QueryScorer(query, inField);
-    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
-    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
-    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
+		String[] fields = {"title", "artist", "lyrics"};
+    	Query query = new MultiFieldQueryParser(fields, new StandardAnalyzer()).parse(queryString);
+    	QueryScorer queryScorer = new QueryScorer(query);
+    	//Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
+
+		SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+
+    	Highlighter highlighter = new Highlighter(formatter,queryScorer); // Set the best scorer fragments
+    	//highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
         IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
         IndexSearcher searcher = new IndexSearcher(indexReader);
         TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
@@ -64,13 +60,23 @@ public class SoongleService {
         for (ScoreDoc scoreDoc : scoreDocs) {
         	Map<String, String> result = new HashMap<>();
         	Document document = searcher.doc(scoreDoc.doc);
-            String field = document.get(inField);
-            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
+            String field = document.get("lyrics");
+			String fieldA = document.get("artist");
+			String fieldT = document.get("title");
+
+            TokenStream tokenStream = TokenSources.getTokenStream("lyrics",field, new StandardAnalyzer());
+			TokenStream tokenStreamA = TokenSources.getTokenStream("artist",fieldA, new StandardAnalyzer());
+			TokenStream tokenStreamT = TokenSources.getTokenStream("title",fieldT, new StandardAnalyzer());
+
             String fragment = highlighter.getBestFragment(tokenStream, field);
-            result.put(inField, fragment);
-            for (String s: Arrays.asList("artist", "title", "lyrics"))
-            	if (s != inField)
-            		result.put(s, document.get(s));
+			String fragmentA = highlighter.getBestFragment(tokenStreamA, fieldA);
+			String fragmentT = highlighter.getBestFragment(tokenStreamT, fieldT);
+
+			result.put("lyrics", Objects.requireNonNullElse(fragment, field));
+			result.put("artist", Objects.requireNonNullElse(fragmentA, fieldA));
+			result.put("title", Objects.requireNonNullElse(fragmentT, fieldT));
+
+
             results.add(result);
             lastDoc = scoreDoc;
         }

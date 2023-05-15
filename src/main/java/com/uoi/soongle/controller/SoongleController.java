@@ -41,8 +41,8 @@ public class SoongleController {
     
 		//soongleService.buildModel();
 
-		//if (!Files.exists(path2))
-		//	soongleService.buildModelIndex();
+		if (!Files.exists(path2))
+			soongleService.buildModelIndex();
 
 		if (!Files.exists(path))
 			soongleService.buildIndex();
@@ -75,6 +75,8 @@ public class SoongleController {
 			results = soongleService.groupSearchIndex("lyrics", query);
 		} else if (searchType.equals("semantic")) {
 			//TODO
+			soongleService.setLastWord2Vec(0);
+			results = soongleService.searchWord2Vec(query);
 		}
 		model.addAttribute("results", results);
 		return "results";
@@ -89,6 +91,9 @@ public class SoongleController {
 			results = soongleService.groupSearchIndex("lyrics", soongleService.getQuery());
 		} else if (soongleService.getSearchType().equals("semantic")) {
 			//TODO
+
+			results = soongleService.searchWord2Vec(soongleService.getQuery());
+
 		}
 		model.addAttribute("results", results);
 		return "results";

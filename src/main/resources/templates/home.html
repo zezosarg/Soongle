@@ -19,18 +19,31 @@
 			<h4> Search about your favorite song, artist or lyrics</h4>
 			
 	 		<br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+
+			<a th:href="@{/rebuildLuceneIndex}"
+				class="btn btn-primary btn-sm mb-3">
+				Rebuild lucene index
+			</a>
+
+			<br>
 		
 			<form autocomplete="off" th:action="@{/results}"  method="post">
-				<div class="autocomplete" style="width:1000px;">
+				<select class="custom-select" id="strategy" name="strategy">
+				    <option value="regular">Regular search</option>
+				    <option value="group">Group by artist</option>
+				    <option value="semantic">Semantic search</option>
+				</select>
+				<br><br>
+				<div class="autocomplete" style="width:1110px;">
 					<input
 						id="myInput"
 						type="text"
+						class="form-control mb-4 col-16"
 						placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'"
 						name="query"
 					/>
-				<div><br>
-			  	<input type="submit">
-			<!--<input type="text" class="form-control mb-4 col-16" placeholder="Default search field is 'lyrics'	For alternative search fields, use 'field:query'	Available fields are 'lyrics', 'artist', 'title'" name="query"/>-->
+				<div>
+			  	<input type="submit" class="btn btn-primary btn-sm mb-3">
 			</form>
 
 			<script th:inline="javascript">

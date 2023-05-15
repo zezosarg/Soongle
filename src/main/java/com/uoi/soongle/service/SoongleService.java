@@ -13,18 +13,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -37,22 +28,25 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
 import org.apache.lucene.search.highlight.TokenSources;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.CSVReader;
 
 @Service
 public class SoongleService {
-	
+
+	Word2VectorModel model = null;
+
 	private ScoreDoc lastDoc;
 	private int lastGroup;
 	private String query;
+
+	private boolean modelBuilt = false;
+
 	private String searchType;
-	
+
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
     	Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
@@ -127,15 +121,82 @@ public class SoongleService {
 		lastGroup += maxGroupsPerPage;
         return documentsList;
     }
-    
+
+	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException, InvalidTokenOffsetsException {
+		query = queryString;
+		List<Map<String, String>> results = new ArrayList<>();
+
+		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
+		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,10);
+
+		for (DocScore docScore : docOrder) {
+			IndexReader indexReaderLucene = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
+			IndexSearcher searcher = new IndexSearcher(indexReaderLucene);
+			Query queryObj = new QueryParser("id", new StandardAnalyzer()).parse(docScore.getDocId()+"");
+			TopDocs topDocs = searcher.searchAfter(null, queryObj, 1);
+			ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+			for (ScoreDoc scoreDoc : scoreDocs) {
+				Map<String, String> result = new HashMap<>();
+				Document document = searcher.doc(scoreDoc.doc);
+				for (String s: Arrays.asList("artist", "title", "lyrics"))
+					result.put(s, document.get(s));
+				results.add(result);
+			}
+		}
+
+
+
+		return results;//searchIndex("id","", results);
+	}
+
     public void buildIndex() throws IOException {
+
     	IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
     	IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("luceneindex")), config);
     	List<List<String>> records = loadData();
     	for (List<String> record : records)
-    		addDoc(w, record.get(1), record.get(2), record.get(3));	// 0 is id
+    		addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));	// 0 is id
     	w.close();
     }
+
+	public void buildModel(){
+		if(modelBuilt)
+			return;
+
+		model = new Word2VectorModel();
+		modelBuilt = true;
+	}
+
+	public void buildModelIndex() throws IOException, ParseException {
+
+		IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
+		IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("modelindex")), config);
+
+		List<List<String>> records = loadData();
+		for (List<String> record : records)
+			model.addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));
+
+		w.close();
+/*
+		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
+		IndexSearcher searcher = new IndexSearcher(indexReader);
+		TopDocs topDocs = searcher.searchAfter(null,
+				new QueryParser("id", new StandardAnalyzer()).parse("5381"),
+				10);
+
+		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+			Document document = searcher.doc(scoreDoc.doc);
+			System.out.println(document.get("id"));
+
+			IndexableField[] fields = document.getFields("vector");
+			for (IndexableField field : fields) {
+				System.out.print(", " + field.numericValue() + ", ");
+			}
+			System.out.println();
+
+		}
+*/
+	}
 	
 	public List<List<String>> loadData() throws IOException {
 		List<List<String>> records = new ArrayList<List<String>>();
@@ -146,7 +207,7 @@ public class SoongleService {
 		return records;
 	}
 	
-	public void addDoc(IndexWriter w, String artist, String title, String lyrics) throws IOException {
+	public void addDoc(IndexWriter w, String id ,String artist, String title, String lyrics) throws IOException {
 		Document document = new Document();
 		
 //		FieldType fieldType = new FieldType();
@@ -159,6 +220,7 @@ public class SoongleService {
 //		document.add(new StoredField("artist", artist));
 		
 		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
+		document.add(new TextField("id", id, Field.Store.YES));
 		document.add(new TextField("artist", artist, Field.Store.YES));
 		document.add(new TextField("title", title, Field.Store.YES));
 		document.add(new TextField("lyrics", lyrics, Field.Store.YES));

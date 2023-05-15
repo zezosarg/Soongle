@@ -33,10 +33,20 @@ public class SoongleController {
 	}
 	
 	@RequestMapping("/home")
-	public String getHome(Model model) throws IOException {
+	public String getHome(Model model) throws IOException, ParseException {
 		Path path = Paths.get("luceneindex");
+		Path path2 = Paths.get("modelindex");
+
+    //TODO: enable this for final
+    
+		//soongleService.buildModel();
+
+		//if (!Files.exists(path2))
+		//	soongleService.buildModelIndex();
+
 		if (!Files.exists(path))
 			soongleService.buildIndex();
+
 	    model.addAttribute("history", searchHistory);
 		return "home";
 	}

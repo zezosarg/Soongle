@@ -49,10 +49,10 @@ import com.opencsv.CSVReader;
 public class SoongleService {
 	
 	private ScoreDoc lastDoc;
-
 	private int lastGroup;
 	private String query;
-
+	private String searchType;
+	
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
     	Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
@@ -165,11 +165,23 @@ public class SoongleService {
 		w.addDocument(document);
 	}
 
-	public String getQuery() { return query; }
+	public String getQuery() {
+		return query;
+	}
 
-	public void setLastDoc(Object object) {	lastDoc = null;	}
+	public void setLastDoc(ScoreDoc scoreDoc) {
+		lastDoc = scoreDoc;
+	}
 
 	public void setLastGroup(int i) {
 		lastGroup = i;
+	}
+
+	public String getSearchType() {
+		return searchType;
+	}
+
+	public void setSearchType(String searchType) {
+		this.searchType = searchType;
 	}
 }

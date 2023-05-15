@@ -52,18 +52,34 @@ public class SoongleController {
 	}
 
 	@RequestMapping("/results")
-	public String retrieveResults(@RequestParam("query") String query, Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
+	public String retrieveResults(@RequestParam("query") String query, @RequestParam("strategy") String searchType,
+	Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
 		searchHistory.add(query);
-		soongleService.setLastDoc(null);
-		soongleService.setLastGroup(0);
-		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", query);//soongleService.searchIndex("lyrics", query);
+		soongleService.setSearchType(searchType);
+		List<Map<String, String>> results = null;
+		if(searchType.equals("regular")) {
+			soongleService.setLastDoc(null);
+			results = soongleService.searchIndex("lyrics", query);
+		} else if (searchType.equals("group")) {
+			soongleService.setLastGroup(0);
+			results = soongleService.groupSearchIndex("lyrics", query);
+		} else if (searchType.equals("semantic")) {
+			//TODO
+		}
 		model.addAttribute("results", results);
 		return "results";
 	}
 	
 	@RequestMapping("/moreResults")
 	public String retrieveMoreResults(Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
-		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", soongleService.getQuery());
+		List<Map<String, String>> results = null;
+		if(soongleService.getSearchType().equals("regular")) {
+			results = soongleService.searchIndex("lyrics", soongleService.getQuery());
+		} else if (soongleService.getSearchType().equals("group")) {
+			results = soongleService.groupSearchIndex("lyrics", soongleService.getQuery());
+		} else if (soongleService.getSearchType().equals("semantic")) {
+			//TODO
+		}
 		model.addAttribute("results", results);
 		return "results";
 	}

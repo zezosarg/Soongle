@@ -47,6 +47,8 @@ public class SoongleService {
 
 	private String searchType;
 
+	private int lastWord2Vec;
+
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
     	Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
@@ -124,10 +126,11 @@ public class SoongleService {
 
 	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException, InvalidTokenOffsetsException {
 		query = queryString;
+		int maxResultsPerPage = 10;
 		List<Map<String, String>> results = new ArrayList<>();
 
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,10);
+		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,maxResultsPerPage);
 
 		for (DocScore docScore : docOrder) {
 			IndexReader indexReaderLucene = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
@@ -145,7 +148,7 @@ public class SoongleService {
 		}
 
 
-
+		maxResultsPerPage += 10;
 		return results;//searchIndex("id","", results);
 	}
 
@@ -241,6 +244,10 @@ public class SoongleService {
 
 	public String getSearchType() {
 		return searchType;
+	}
+
+	public void setLastWord2Vec(int i) {
+		lastWord2Vec = i;
 	}
 
 	public void setSearchType(String searchType) {

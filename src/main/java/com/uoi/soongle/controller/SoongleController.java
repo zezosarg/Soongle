@@ -1,5 +1,6 @@
 package com.uoi.soongle.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,7 @@ import java.util.Set;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,10 +37,12 @@ public class SoongleController {
 		Path path = Paths.get("luceneindex");
 		Path path2 = Paths.get("modelindex");
 
-		soongleService.buildModel();
+    //TODO: enable this for final
+    
+		//soongleService.buildModel();
 
-		if (!Files.exists(path2))
-			soongleService.buildModelIndex();
+		//if (!Files.exists(path2))
+		//	soongleService.buildModelIndex();
 
 		if (!Files.exists(path))
 			soongleService.buildIndex();
@@ -46,22 +50,46 @@ public class SoongleController {
 	    model.addAttribute("history", searchHistory);
 		return "home";
 	}
+	
+	@RequestMapping("/rebuildLuceneIndex")
+	public String rebuildLuceneIndex(Model model) throws IOException {
+		Path path = Paths.get("luceneindex");
+		if (Files.exists(path))
+			FileUtils.deleteDirectory(new File("luceneindex"));
+		soongleService.buildIndex();
+	    model.addAttribute("history", searchHistory);
+		return "home";
+	}
 
 	@RequestMapping("/results")
-	public String retrieveResults(@RequestParam("query") String query, Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
+	public String retrieveResults(@RequestParam("query") String query, @RequestParam("strategy") String searchType,
+	Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
 		searchHistory.add(query);
-		soongleService.setLastDoc(null);
-		soongleService.setLastGroup(0);
-
-		List<Map<String, String>> results = soongleService.searchWord2Vec(query);
-		//List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", query);//soongleService.searchIndex("lyrics", query);
+		soongleService.setSearchType(searchType);
+		List<Map<String, String>> results = null;
+		if(searchType.equals("regular")) {
+			soongleService.setLastDoc(null);
+			results = soongleService.searchIndex("lyrics", query);
+		} else if (searchType.equals("group")) {
+			soongleService.setLastGroup(0);
+			results = soongleService.groupSearchIndex("lyrics", query);
+		} else if (searchType.equals("semantic")) {
+			//TODO
+		}
 		model.addAttribute("results", results);
 		return "results";
 	}
 	
 	@RequestMapping("/moreResults")
 	public String retrieveMoreResults(Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
-		List<Map<String, String>> results = soongleService.groupSearchIndex("lyrics", soongleService.getQuery());
+		List<Map<String, String>> results = null;
+		if(soongleService.getSearchType().equals("regular")) {
+			results = soongleService.searchIndex("lyrics", soongleService.getQuery());
+		} else if (soongleService.getSearchType().equals("group")) {
+			results = soongleService.groupSearchIndex("lyrics", soongleService.getQuery());
+		} else if (soongleService.getSearchType().equals("semantic")) {
+			//TODO
+		}
 		model.addAttribute("results", results);
 		return "results";
 	}

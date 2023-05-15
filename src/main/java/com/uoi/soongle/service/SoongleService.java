@@ -40,11 +40,12 @@ public class SoongleService {
 	Word2VectorModel model = null;
 
 	private ScoreDoc lastDoc;
-
 	private int lastGroup;
 	private String query;
 
 	private boolean modelBuilt = false;
+
+	private String searchType;
 
     public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
         query = queryString;
@@ -96,11 +97,11 @@ public class SoongleService {
 		groupingSearch.setGroupDocsLimit(groupDocumentLimit);
 
 		TopGroups<BytesRef> topGroups = groupingSearch.search(indexSearcher, query, lastGroup, maxGroupsPerPage);
-        System.out.println("topGroups.groups.length "+topGroups.groups.length);
+//        System.out.println("topGroups.groups.length "+topGroups.groups.length);
         List<Map<String, String>> documentsList = new ArrayList<>();
 	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
 	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
-	    	System.out.println("scoreDocs.length "+scoreDocs.length);
+//	    	System.out.println("scoreDocs.length "+scoreDocs.length);
         	for (ScoreDoc scoreDoc : scoreDocs) {
 	        	Map<String, String> fieldMap = new HashMap<>();
 
@@ -226,11 +227,23 @@ public class SoongleService {
 		w.addDocument(document);
 	}
 
-	public String getQuery() { return query; }
+	public String getQuery() {
+		return query;
+	}
 
-	public void setLastDoc(Object object) {	lastDoc = null;	}
+	public void setLastDoc(ScoreDoc scoreDoc) {
+		lastDoc = scoreDoc;
+	}
 
 	public void setLastGroup(int i) {
 		lastGroup = i;
+	}
+
+	public String getSearchType() {
+		return searchType;
+	}
+
+	public void setSearchType(String searchType) {
+		this.searchType = searchType;
 	}
 }

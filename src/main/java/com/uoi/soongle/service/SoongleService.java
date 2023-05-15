@@ -103,11 +103,11 @@ public class SoongleService {
 		groupingSearch.setGroupDocsLimit(groupDocumentLimit);
 
 		TopGroups<BytesRef> topGroups = groupingSearch.search(indexSearcher, query, lastGroup, maxGroupsPerPage);
-        System.out.println("topGroups.groups.length "+topGroups.groups.length);
+//        System.out.println("topGroups.groups.length "+topGroups.groups.length);
         List<Map<String, String>> documentsList = new ArrayList<>();
 	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
 	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
-	    	System.out.println("scoreDocs.length "+scoreDocs.length);
+//	    	System.out.println("scoreDocs.length "+scoreDocs.length);
         	for (ScoreDoc scoreDoc : scoreDocs) {
 	        	Map<String, String> fieldMap = new HashMap<>();
 

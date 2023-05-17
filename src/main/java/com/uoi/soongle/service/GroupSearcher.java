@@ -44,8 +44,6 @@ public class GroupSearcher extends Searcher{
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 		int maxGroupsPerPage = 5;
 		int groupDocumentLimit = 100;
-
-		query = queryString;
 		Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
 
     	QueryScorer queryScorer = new QueryScorer(query, inField);
@@ -60,19 +58,15 @@ public class GroupSearcher extends Searcher{
 		groupingSearch.setGroupDocsLimit(groupDocumentLimit);
 
 		TopGroups<BytesRef> topGroups = groupingSearch.search(indexSearcher, query, lastGroup, maxGroupsPerPage);
-//        System.out.println("topGroups.groups.length "+topGroups.groups.length);
         List<Map<String, String>> documentsList = new ArrayList<>();
 	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
 	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
-//	    	System.out.println("scoreDocs.length "+scoreDocs.length);
         	for (ScoreDoc scoreDoc : scoreDocs) {
 	        	Map<String, String> fieldMap = new HashMap<>();
-
 	        	Document document = indexSearcher.doc(scoreDoc.doc);
 	            String field = document.get(inField);
 	            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
 	            String fragment = highlighter.getBestFragment(tokenStream, field);
-
 	            fieldMap.put(inField, fragment);
 	            for (String s: Arrays.asList("artist", "title", "lyrics"))
 	            	if (s != inField)
@@ -80,13 +74,7 @@ public class GroupSearcher extends Searcher{
 	            documentsList.add(fieldMap);
 	        }
     	}
-
 		lastGroup += maxGroupsPerPage;
         return documentsList;	
-	}
-	
-	@Override
-	public void reset() {
-		this.lastGroup = 0;
 	}
 }

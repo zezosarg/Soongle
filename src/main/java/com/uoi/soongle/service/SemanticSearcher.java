@@ -30,7 +30,6 @@ public class SemanticSearcher extends Searcher{
 	
 	@Override
 	public List<Map<String, String>> search(String inField, String queryString, Word2VectorModel model) throws ParseException, IOException, InvalidTokenOffsetsException {
-		query = queryString;
 		int maxResultsPerPage = 10;
 		List<Map<String, String>> results = new ArrayList<>();
 		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
@@ -51,12 +50,6 @@ public class SemanticSearcher extends Searcher{
 			}
 		}
 		lastWord2Vec += 10;
-		return results;//searchIndex("id","", results);
+		return results;
 	}
-
-	@Override
-	public void reset() {
-		this.lastWord2Vec = 0;
-	}
-
 }

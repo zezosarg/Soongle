@@ -34,7 +34,6 @@ public class RegularSearcher extends Searcher {
 
 	@Override
 	public List<Map<String, String>> search(String inField, String queryString, Word2VectorModel model) throws ParseException, IOException, InvalidTokenOffsetsException {
-		query = queryString;
 		String[] fields = {"title", "artist", "lyrics"};
     	Query query = new MultiFieldQueryParser(fields, new StandardAnalyzer()).parse(queryString);
     	QueryScorer queryScorer = new QueryScorer(query);
@@ -73,10 +72,5 @@ public class RegularSearcher extends Searcher {
             lastDoc = scoreDoc;
         }
         return results;
-	}
-
-	@Override
-	public void reset() {
-		this.lastDoc = null;
 	}
 }

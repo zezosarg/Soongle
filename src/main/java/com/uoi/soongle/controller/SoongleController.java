@@ -31,20 +31,16 @@ public class SoongleController {
 	private Set<String> searchHistory;
 	private Searcher searcher;
 
-	public SoongleController(Set<String> searchHistory) {
+	public SoongleController(Set<String> searchHistory) throws IOException, ParseException {
 		this.searchHistory = new HashSet<String>();
 	}
 	
 	@RequestMapping("/home")
 	public String getHome(Model model) throws IOException, ParseException {
-		Path path = Paths.get("luceneindex");
-		Path path2 = Paths.get("modelindex");
-    
-		//soongleService.buildModel(); // TODO: enable this for final
-
-		if (!Files.exists(path2))
-//TODO			soongleService.buildModelIndex();
-		if (!Files.exists(path))
+		soongleService.buildModel();
+		if (!Files.exists(Paths.get("modelindex")))
+			soongleService.buildModelIndex();
+		if (!Files.exists(Paths.get("luceneindex")))
 			soongleService.buildIndex();
 	    model.addAttribute("history", searchHistory);
 		return "home";
@@ -64,18 +60,17 @@ public class SoongleController {
 	public String retrieveResults(@RequestParam("query") String query, @RequestParam("strategy") String searchType, Model model)
 	throws ParseException, IOException, InvalidTokenOffsetsException {
 		searchHistory.add(query);
+		soongleService.setQuery(query);
 		searcher =  new SearcherFactory().createSearcher(searchType);
-		searcher.reset();
-		List<Map<String, String>> results = searcher.search(searchType, query, soongleService.getModel());
+		List<Map<String, String>> results = searcher.search("lyrics", query, soongleService.getModel());
 		model.addAttribute("results", results);
 		return "results";
 	}
 	
 	@RequestMapping("/moreResults")
 	public String retrieveMoreResults(Model model) throws ParseException, IOException, InvalidTokenOffsetsException {
-		List<Map<String, String>> results = searcher.search("lyrics", searcher.getQuery(), soongleService.getModel());
+		List<Map<String, String>> results = searcher.search("lyrics", soongleService.getQuery(), soongleService.getModel());
 		model.addAttribute("results", results);
 		return "results";
 	}
-	 
 }

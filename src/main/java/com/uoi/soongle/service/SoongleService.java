@@ -26,6 +26,7 @@ import com.uoi.soongle.model.Word2VectorModel;
 public class SoongleService {
 
 	Word2VectorModel model;
+	String query;
 
     public void buildIndex() throws IOException {
     	IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
@@ -42,34 +43,12 @@ public class SoongleService {
 	}
 
 	public void buildModelIndex() throws IOException, ParseException {
-
 		IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
 		IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("modelindex")), config);
-
 		List<List<String>> records = loadData();
 		for (List<String> record : records)
 			model.addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));
-
 		w.close();
-/*
-		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		IndexSearcher searcher = new IndexSearcher(indexReader);
-		TopDocs topDocs = searcher.searchAfter(null,
-				new QueryParser("id", new StandardAnalyzer()).parse("5381"),
-				10);
-
-		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-			Document document = searcher.doc(scoreDoc.doc);
-			System.out.println(document.get("id"));
-
-			IndexableField[] fields = document.getFields("vector");
-			for (IndexableField field : fields) {
-				System.out.print(", " + field.numericValue() + ", ");
-			}
-			System.out.println();
-
-		}
-*/
 	}
 	
 	public List<List<String>> loadData() throws IOException {
@@ -83,16 +62,7 @@ public class SoongleService {
 	
 	public void addDoc(IndexWriter w, String id ,String artist, String title, String lyrics) throws IOException {
 		Document document = new Document();
-		
-//		FieldType fieldType = new FieldType();
-//		fieldType.setStored(true);
-//		fieldType.setDocValuesType(DocValuesType.SORTED);
-//		Field artistField = new Field("artist", artist, fieldType);
-//		document.add(artistField);
-				
-//		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 //		document.add(new StoredField("artist", artist));
-		
 		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 		document.add(new TextField("id", id, Field.Store.YES));
 		document.add(new TextField("artist", artist, Field.Store.YES));
@@ -105,4 +75,11 @@ public class SoongleService {
 		return model;
 	}
 	
+	public String getQuery() {
+		return query;
+	}
+
+	public void setQuery(String query) {
+		this.query = query;
+	}
 }

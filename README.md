@@ -31,3 +31,13 @@ Results will be ranked based on affinity with the query.
 They will be fetched 10 at a time uppon user request.
 Search keywords will be highlighted in results.
 A grouping feature upon the artist field is available. 
+
+
+**Usage**
+
+Upon visiting the home page, the regular and word2vec indexes are built enabling all types of search.
+There is an option to rebuild the regular lucene index in case a problem occurs.
+The user can select between the three types of searches (regular, group by artist, semantic) via a dropdown list.
+Autocompletion is supported based on search history.
+The user can select the fields that the search will utilize typing 'field:query' separated with AND/OR operators.
+When viewing results, the user can request additional or return to the home page.

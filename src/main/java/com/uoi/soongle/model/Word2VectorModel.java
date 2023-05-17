@@ -1,4 +1,4 @@
-package com.uoi.soongle.service;
+package com.uoi.soongle.model;
 
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -165,27 +165,4 @@ public class Word2VectorModel {
         w.addDocument(document);
     }
 
-}
-
-class DocScore {
-    private int docId;
-    private double score;
-
-    public DocScore(int docId, double score) {
-        this.docId = docId;
-        this.score = score;
-    }
-
-    public int getDocId() {
-        return docId;
-    }
-
-    public double getScore() {
-        return score;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + docId + ", " + score + "]";
-    }
 }

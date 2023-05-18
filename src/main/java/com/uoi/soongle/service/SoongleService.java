@@ -3,163 +3,32 @@ package com.uoi.soongle.service;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.grouping.GroupDocs;
-import org.apache.lucene.search.grouping.GroupingSearch;
-import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Service;
 
 import com.opencsv.CSVReader;
+import com.uoi.soongle.model.Word2VectorModel;
 
 @Service
 public class SoongleService {
 
-	Word2VectorModel model = null;
-
-	private ScoreDoc lastDoc;
-	private int lastGroup;
-	private String query;
-
-	private boolean modelBuilt = false;
-
-	private String searchType;
-
-	private int lastWord2Vec;
-
-    public List<Map<String, String>> searchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
-        query = queryString;
-		String[] fields = {"title", "artist", "lyrics"};
-    	Query query = new MultiFieldQueryParser(fields, new StandardAnalyzer()).parse(queryString);
-    	QueryScorer queryScorer = new QueryScorer(query);
-    	//Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
-
-		SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
-
-    	Highlighter highlighter = new Highlighter(formatter,queryScorer); // Set the best scorer fragments
-    	//highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
-        IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
-        IndexSearcher searcher = new IndexSearcher(indexReader);
-        TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
-        ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-        List<Map<String, String>> results = new ArrayList<>();
-        for (ScoreDoc scoreDoc : scoreDocs) {
-        	Map<String, String> result = new HashMap<>();
-        	Document document = searcher.doc(scoreDoc.doc);
-            String field = document.get("lyrics");
-			String fieldA = document.get("artist");
-			String fieldT = document.get("title");
-
-            TokenStream tokenStream = TokenSources.getTokenStream("lyrics",field, new StandardAnalyzer());
-			TokenStream tokenStreamA = TokenSources.getTokenStream("artist",fieldA, new StandardAnalyzer());
-			TokenStream tokenStreamT = TokenSources.getTokenStream("title",fieldT, new StandardAnalyzer());
-
-            String fragment = highlighter.getBestFragment(tokenStream, field);
-			String fragmentA = highlighter.getBestFragment(tokenStreamA, fieldA);
-			String fragmentT = highlighter.getBestFragment(tokenStreamT, fieldT);
-
-			result.put("lyrics", Objects.requireNonNullElse(fragment, field));
-			result.put("artist", Objects.requireNonNullElse(fragmentA, fieldA));
-			result.put("title", Objects.requireNonNullElse(fragmentT, fieldT));
-
-
-            results.add(result);
-            lastDoc = scoreDoc;
-        }
-        return results;
-    }
-    
-    public List<Map<String, String>> groupSearchIndex(String inField, String queryString) throws ParseException, IOException, InvalidTokenOffsetsException {
-		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
-		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
-
-		int maxGroupsPerPage = 5;
-		int groupDocumentLimit = 100;
-
-		query = queryString;
-		Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
-
-    	QueryScorer queryScorer = new QueryScorer(query, inField);
-    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
-    	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
-    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
-
-		GroupingSearch groupingSearch = new GroupingSearch("artist");
-		groupingSearch.setGroupSort(new Sort(SortField.FIELD_SCORE));
-		groupingSearch.setCachingInMB(4.0, true);
-		groupingSearch.setAllGroups(true);
-		groupingSearch.setGroupDocsLimit(groupDocumentLimit);
-
-		TopGroups<BytesRef> topGroups = groupingSearch.search(indexSearcher, query, lastGroup, maxGroupsPerPage);
-//        System.out.println("topGroups.groups.length "+topGroups.groups.length);
-        List<Map<String, String>> documentsList = new ArrayList<>();
-	    for (GroupDocs<BytesRef> groupDocs : topGroups.groups) {
-	    	ScoreDoc[] scoreDocs = groupDocs.scoreDocs;
-//	    	System.out.println("scoreDocs.length "+scoreDocs.length);
-        	for (ScoreDoc scoreDoc : scoreDocs) {
-	        	Map<String, String> fieldMap = new HashMap<>();
-
-	        	Document document = indexSearcher.doc(scoreDoc.doc);
-	            String field = document.get(inField);
-	            TokenStream tokenStream = TokenSources.getAnyTokenStream(indexReader, scoreDoc.doc, inField, document, new StandardAnalyzer());
-	            String fragment = highlighter.getBestFragment(tokenStream, field);
-
-	            fieldMap.put(inField, fragment);
-	            for (String s: Arrays.asList("artist", "title", "lyrics"))
-	            	if (s != inField)
-	            		fieldMap.put(s, document.get(s));
-	            documentsList.add(fieldMap);
-	        }
-    	}
-
-		lastGroup += maxGroupsPerPage;
-        return documentsList;
-    }
-
-	public List<Map<String, String>> searchWord2Vec(String queryString) throws IOException, ParseException, InvalidTokenOffsetsException {
-		query = queryString;
-		int maxResultsPerPage = 10;
-		List<Map<String, String>> results = new ArrayList<>();
-
-		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		List<DocScore> docOrder = model.getTopDocs(indexReader, queryString,0 ,maxResultsPerPage);
-
-		for (DocScore docScore : docOrder) {
-			IndexReader indexReaderLucene = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
-			IndexSearcher searcher = new IndexSearcher(indexReaderLucene);
-			Query queryObj = new QueryParser("id", new StandardAnalyzer()).parse(docScore.getDocId()+"");
-			TopDocs topDocs = searcher.searchAfter(null, queryObj, 1);
-			ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			for (ScoreDoc scoreDoc : scoreDocs) {
-				Map<String, String> result = new HashMap<>();
-				Document document = searcher.doc(scoreDoc.doc);
-				for (String s: Arrays.asList("artist", "title", "lyrics"))
-					result.put(s, document.get(s));
-				results.add(result);
-			}
-		}
-
-
-		maxResultsPerPage += 10;
-		return results;//searchIndex("id","", results);
-	}
+	Word2VectorModel model;
+	String query;
 
     public void buildIndex() throws IOException {
-
     	IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
     	IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("luceneindex")), config);
     	List<List<String>> records = loadData();
@@ -169,42 +38,17 @@ public class SoongleService {
     }
 
 	public void buildModel(){
-		if(modelBuilt)
-			return;
-
-		model = new Word2VectorModel();
-		modelBuilt = true;
+		if(model == null)
+			model = new Word2VectorModel();
 	}
 
 	public void buildModelIndex() throws IOException, ParseException {
-
 		IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
 		IndexWriter w = new IndexWriter(FSDirectory.open(Paths.get("modelindex")), config);
-
 		List<List<String>> records = loadData();
 		for (List<String> record : records)
 			model.addDoc(w, record.get(0), record.get(1), record.get(2), record.get(3));
-
 		w.close();
-/*
-		IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("modelindex")));
-		IndexSearcher searcher = new IndexSearcher(indexReader);
-		TopDocs topDocs = searcher.searchAfter(null,
-				new QueryParser("id", new StandardAnalyzer()).parse("5381"),
-				10);
-
-		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-			Document document = searcher.doc(scoreDoc.doc);
-			System.out.println(document.get("id"));
-
-			IndexableField[] fields = document.getFields("vector");
-			for (IndexableField field : fields) {
-				System.out.print(", " + field.numericValue() + ", ");
-			}
-			System.out.println();
-
-		}
-*/
 	}
 	
 	public List<List<String>> loadData() throws IOException {
@@ -218,16 +62,7 @@ public class SoongleService {
 	
 	public void addDoc(IndexWriter w, String id ,String artist, String title, String lyrics) throws IOException {
 		Document document = new Document();
-		
-//		FieldType fieldType = new FieldType();
-//		fieldType.setStored(true);
-//		fieldType.setDocValuesType(DocValuesType.SORTED);
-//		Field artistField = new Field("artist", artist, fieldType);
-//		document.add(artistField);
-				
-//		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 //		document.add(new StoredField("artist", artist));
-		
 		document.add(new SortedDocValuesField("artist", new BytesRef(artist)));
 		document.add(new TextField("id", id, Field.Store.YES));
 		document.add(new TextField("artist", artist, Field.Store.YES));
@@ -235,28 +70,16 @@ public class SoongleService {
 		document.add(new TextField("lyrics", lyrics, Field.Store.YES));
 		w.addDocument(document);
 	}
-
+	
+	public Word2VectorModel getModel() {
+		return model;
+	}
+	
 	public String getQuery() {
 		return query;
 	}
 
-	public void setLastDoc(ScoreDoc scoreDoc) {
-		lastDoc = scoreDoc;
-	}
-
-	public void setLastGroup(int i) {
-		lastGroup = i;
-	}
-
-	public String getSearchType() {
-		return searchType;
-	}
-
-	public void setLastWord2Vec(int i) {
-		lastWord2Vec = i;
-	}
-
-	public void setSearchType(String searchType) {
-		this.searchType = searchType;
+	public void setQuery(String query) {
+		this.query = query;
 	}
 }

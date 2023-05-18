@@ -24,7 +24,7 @@ import org.apache.lucene.store.FSDirectory;
 import com.uoi.soongle.model.DocScore;
 import com.uoi.soongle.model.Word2VectorModel;
 
-public class SemanticSearcher extends Searcher{
+public class SemanticSearcher extends SoongleSearcher{
 
 	private int lastWord2Vec;
 	

@@ -2,7 +2,7 @@ package com.uoi.soongle.service;
 
 public class SearcherFactory {
 
-	public Searcher createSearcher(String searchType) {
+	public SoongleSearcher createSearcher(String searchType) {
 		
 		if(searchType.equals("regular")) {
 			return new RegularSearcher();

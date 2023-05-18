@@ -32,7 +32,10 @@ public class Word2VectorModel {
 
     public Word2VectorModel(){
         System.out.println("Loading model....");
-        vec = WordVectorSerializer.readWord2VecModel("data\\lexvec.enwiki+newscrawl.300d.W.pos.vectors");
+        String path = "data\\lexvec.enwiki+newscrawl.300d.W.pos.vectors";
+        if (System.getProperty("os.name").equals("Linux"))
+        	path = "data/lexvec.enwiki+newscrawl.300d.W.pos.vectors";
+        vec = WordVectorSerializer.readWord2VecModel(path);
     }
 
     public INDArray textToVector(String text){

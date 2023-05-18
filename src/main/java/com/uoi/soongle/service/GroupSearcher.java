@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
 
 import com.uoi.soongle.model.Word2VectorModel;
 
-public class GroupSearcher extends Searcher{
+public class GroupSearcher extends SoongleSearcher{
 
 	private int lastGroup;
 

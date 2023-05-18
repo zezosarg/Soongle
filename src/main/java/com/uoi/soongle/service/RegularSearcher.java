@@ -28,7 +28,7 @@ import org.apache.lucene.store.FSDirectory;
 
 import com.uoi.soongle.model.Word2VectorModel;
 
-public class RegularSearcher extends Searcher {
+public class RegularSearcher extends SoongleSearcher {
 
 	private ScoreDoc lastDoc;
 

@@ -1,2 +1,5 @@
 target/
 .idea
+luceneindex/
+modelindex/
+data/lexvec.enwiki+newscrawl.300d.W.pos.vectors

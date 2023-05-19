@@ -23,12 +23,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.highlight.Fragmenter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
-import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 
@@ -47,9 +42,8 @@ public class GroupSearcher extends SoongleSearcher{
 		Query query = new QueryParser(inField, new StandardAnalyzer()).parse(queryString);
 
     	QueryScorer queryScorer = new QueryScorer(query, inField);
-    	Fragmenter fragmenter = new SimpleSpanFragmenter(queryScorer);
     	Highlighter highlighter = new Highlighter(queryScorer); // Set the best scorer fragments
-    	highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
+    	highlighter.setTextFragmenter(new NullFragmenter()); // Set fragment to highlight
 
 		GroupingSearch groupingSearch = new GroupingSearch("artist");
 		groupingSearch.setGroupSort(new Sort(SortField.FIELD_SCORE));

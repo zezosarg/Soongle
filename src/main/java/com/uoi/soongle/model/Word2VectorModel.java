@@ -64,6 +64,9 @@ public class Word2VectorModel {
 
     public List<DocScore> getTopDocs(IndexReader indexReader, String query,int index,int topN) throws IOException, ParseException {
         if(query.equals(lastQuery) && !docIdAndSimilarity.isEmpty()){
+            if(index >= docIdAndSimilarity.size()){
+                return new ArrayList<>();
+            }
             int endIndex = Math.min(docIdAndSimilarity.size(), index+topN);
             List<DocScore> topDocsList = docIdAndSimilarity.subList(index, endIndex);
             return topDocsList;
@@ -81,7 +84,7 @@ public class Word2VectorModel {
             INDArray docVector = null;
             IndexableField[] fields = document.getFields("vector");
             int vectorSize = vec.getLayerSize();
-            INDArray vectorArray = Nd4j.zeros(1, vectorSize); //create a vector from all the fields
+            INDArray vectorArray = Nd4j.zeros(1, vectorSize);
             int i = 0;
             for (IndexableField field : fields) {
                 vectorArray.putScalar(i, field.numericValue().doubleValue());
@@ -91,7 +94,9 @@ public class Word2VectorModel {
             if(Double.isNaN(vecSim)){
                 continue;
             }
-            //documentIdList.add(Integer.parseInt(document.get("id")));
+            if(vecSim < 0.3){
+                continue;
+            }
             docIdAndSimilarity.add(new DocScore(Integer.parseInt(document.get("id")), vecSim));
         }
 
@@ -110,7 +115,6 @@ public class Word2VectorModel {
         INDArray indArray = textToVector(artist + " " + title);
         document.add(new TextField("id", id, Field.Store.YES));
         for(int i = 0; i < indArray.length(); i++) { //traverse indArray
-            //DoubleField doubleField = new DoubleField("double_value", 100.0D, Field.Store.YES);
         	document.add(new StoredField("vector", indArray.getDouble(i)));
         }
         w.addDocument(document);

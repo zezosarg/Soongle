@@ -19,11 +19,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.FSDirectory;
 
 import com.uoi.soongle.model.Word2VectorModel;
@@ -42,7 +38,7 @@ public class RegularSearcher extends SoongleSearcher {
 		SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
 
     	Highlighter highlighter = new Highlighter(formatter,queryScorer); // Set the best scorer fragments
-    	//highlighter.setTextFragmenter(fragmenter); // Set fragment to highlight
+    	highlighter.setTextFragmenter(new NullFragmenter()); // Set fragment to highlight
         IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get("luceneindex")));
         IndexSearcher searcher = new IndexSearcher(indexReader);
         TopDocs topDocs = searcher.searchAfter(lastDoc, query, 10);
